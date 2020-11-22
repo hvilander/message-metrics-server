@@ -10,7 +10,8 @@ const readline = require('readline');
 
 const SMALL_MOCK = 'mock/gps_can_data_small.csv';
 const XXL_MOCK = 'mock/gps_can_data.csv';
-const LINE_DELAY = 0;
+const FILE_BASE = SMALL_MOCK;
+const LINE_DELAY = 100;
 
 
 
@@ -50,7 +51,7 @@ function sleep(ms) {
 async function processLineByLine(socket) {
   console.log('processLineByLine');
   try {
-    const fileStream = fs.createReadStream(XXL_MOCK);
+    const fileStream = fs.createReadStream(FILE_BASE);
 
     const rl = readline.createInterface({
       input: fileStream,
@@ -65,7 +66,6 @@ async function processLineByLine(socket) {
       // Electing to parse into json here. It could be done on the front end if desired.
       // The logic is the same in either place. Since there is likely a lot of expected messages,
       // I could also see where we would get a dumb of many lines to the front end too. 
-      await sleep(LINE_DELAY);
       socket.emit("FromAPI", parseLine(line));
     }
   } catch (error) {
