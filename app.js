@@ -8,6 +8,12 @@ const index = require("./routes/index");
 const fs = require('fs');
 const readline = require('readline');
 
+const SMALL_MOCK = 'mock/gps_can_data_small.csv';
+const XXL_MOCK = 'mock/gps_can_data.csv';
+const LINE_DELAY = 0;
+
+
+
 const app = express();
 app.use(index);
 
@@ -36,10 +42,15 @@ const parseLine = (line) => {
   return messageObj;
 }
 
+function sleep(ms) {
+  return new Promise(res => setTimeout(res, ms));
+}
+
 // taken from example at https://nodejs.org/api/readline.html#readline_example_read_file_stream_line_by_line
 async function processLineByLine(socket) {
+  console.log('processLineByLine');
   try {
-    const fileStream = fs.createReadStream('mock/gps_can_data_small.csv');
+    const fileStream = fs.createReadStream(XXL_MOCK);
 
     const rl = readline.createInterface({
       input: fileStream,
@@ -54,6 +65,7 @@ async function processLineByLine(socket) {
       // Electing to parse into json here. It could be done on the front end if desired.
       // The logic is the same in either place. Since there is likely a lot of expected messages,
       // I could also see where we would get a dumb of many lines to the front end too. 
+      await sleep(LINE_DELAY);
       socket.emit("FromAPI", parseLine(line));
     }
   } catch (error) {
@@ -61,27 +73,14 @@ async function processLineByLine(socket) {
   }
 }
 
-let interval;
-
 io.on("connection", (socket) => {
   console.log("new client connected");
-  if (interval) {
-    clearInterval(interval);
-  }
-  interval = setInterval(() => processLineByLine(socket), 1000);
+
+  processLineByLine(socket);
+
   socket.on("disconnect", () => {
     console.log("Client disconnected");
-    clearInterval(interval);
   });
 });
-
-
-
-const getApiAndEmit = socket => {
-  const response = new Date();
-
-  // Emitting a new message, will be consumed by client
-  socket.emit("FromAPI", response);
-};
 
 server.listen(port, () => console.log(`Listening on port ${port}`));
